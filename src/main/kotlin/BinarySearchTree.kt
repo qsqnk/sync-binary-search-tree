@@ -1,6 +1,6 @@
 class BinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
 
-    private var root: Node<K, V>? = null
+    internal var root: Node<K, V>? = null
 
     override fun get(key: K): V? = findNode(key)?.value
 
@@ -12,21 +12,33 @@ class BinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
             return
         }
 
-        var (parent, cur) = null as Node<K, V>? to root
+        var (parent, cur) = root?.parent to root
 
         while (cur != null && cur.key != key) {
             parent = cur
             cur = if (key < cur.key) cur.left else cur.right
         }
 
-        when {
-            cur != null -> cur.value = value
-            else -> parent?.let { p ->
-                val newNode = Node(key, value).apply { this.parent = p }
-                if (key < p.key) p.left = newNode
-                else p.right = newNode
-            }
+        cur?.let {
+            cur.value = value
+            return
         }
+
+        parent?.let { p ->
+            val newNode = Node(key, value).apply { this.parent = p }
+            if (key < p.key) p.left = newNode
+            else p.right = newNode
+        }
+    }
+
+    private fun findNode(key: K): Node<K, V>? {
+        var cur = root
+
+        while (cur != null && cur.key != key) {
+            cur = if (key < cur.key) cur.left else cur.right
+        }
+
+        return cur
     }
 
     private fun removeNode(node: Node<K, V>): Boolean {
@@ -51,10 +63,11 @@ class BinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
                 true
             }
             else -> {
-                next(node)?.let {
-                    node.key = it.key
-                    node.value = it.value
-                    removeNode(it)
+                next(node)?.let { next ->
+                    removeNode(next)
+                    node.key = next.key
+                    node.value = next.value
+                    true
                 } ?: false
             }
         }
@@ -70,18 +83,8 @@ class BinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
         return next?.parent
     }
 
-    private fun findNode(key: K): Node<K, V>? {
-        var cur = root
-
-        while (cur != null && cur.key != key) {
-            cur = if (key < cur.key) cur.left else cur.right
-        }
-
-        return cur
-    }
-
-    private tailrec fun minInSubtree(root: Node<K, V>?): Node<K, V>? = when (root?.left) {
-        null -> root
-        else -> minInSubtree(root.left)
+    private tailrec fun minInSubtree(subTreeRoot: Node<K, V>?): Node<K, V>? = when (subTreeRoot?.left) {
+        null -> subTreeRoot
+        else -> minInSubtree(subTreeRoot.left)
     }
 }
