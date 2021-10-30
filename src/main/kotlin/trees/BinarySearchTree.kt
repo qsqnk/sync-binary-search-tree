@@ -6,13 +6,16 @@ class BinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
 
     internal var root: Node<K, V>? = null
 
+    var size: Int = 0
+        private set
+
     override fun get(key: K): V? = findNode(key)?.value
 
     override fun remove(key: K): Boolean = findNode(key)?.let { removeNode(it) } ?: false
 
     override fun set(key: K, value: V) {
         if (root == null) {
-            root = Node(key, value)
+            root = Node(key, value).also { size++ }
             return
         }
 
@@ -32,6 +35,7 @@ class BinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
             val newNode = Node(key, value).apply { this.parent = p }
             if (key < p.key) p.left = newNode
             else p.right = newNode
+            size++
         }
     }
 
@@ -55,6 +59,7 @@ class BinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
                     parent?.left -> parent.left = null
                     parent?.right -> parent.right = null
                 }
+                size--
                 true
             }
             node.left == null || node.right == null -> {
@@ -64,20 +69,22 @@ class BinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
                     parent?.left -> parent.left = newChild
                     parent?.right -> parent.right = newChild
                 }
+                size--
                 true
             }
             else -> {
-                next(node)?.let { next ->
+                successor(node)?.let { next ->
                     removeNode(next)
                     node.key = next.key
                     node.value = next.value
+                    size--
                     true
                 } ?: false
             }
         }
     }
 
-    private fun next(node: Node<K, V>): Node<K, V>? {
+    private fun successor(node: Node<K, V>): Node<K, V>? {
         node.right?.let { return minInSubtree(it) }
 
         var next: Node<K, V>? = node

@@ -11,9 +11,8 @@ fun main(args: Array<String>) {
     val tree = BinarySearchTree<Int, Int>()
 
 
-
     val good = (0 until 3000000).toList().shuffled()
-    val bad = (50000 until  1111111).shuffled()
+    val bad = (50000 until 1111111).shuffled()
 
     val t1 = measureTimeMillis {
         good.parallelStream().forEach { syncTree[it] = it }
@@ -27,12 +26,11 @@ fun main(args: Array<String>) {
     }
 
 
-      println("      par def")
-      println("time: $t1 $t2")
-      println("size: ${size(syncTree.root)} ${size(tree.root)}")
-      println("vald: ${validateTree(syncTree.root)} ${validateTree(tree.root)}")
-      println("vert ${allVertIn(syncTree, good, bad)}" +
-              " ${allVertIn(tree, good, bad)}")
+    println("      par def")
+    println("time: $t1 $t2")
+    println("size: ${size(syncTree.root)} ${size(tree.root)}")
+    println("vald: ${validateTree(syncTree.root)} ${validateTree(tree.root)}")
+    println("vert ${allVertIn(syncTree, good, bad)} ${allVertIn(tree, good, bad)}")
 }
 
 internal fun validateTree(

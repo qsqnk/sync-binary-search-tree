@@ -1,5 +1,10 @@
 package nodes
 
+/**
+ * @param [K] type of key stored
+ * @param [V] type of value stored
+ * @param [N] type of node's children and parent stored
+ */
 internal abstract class AbstractNode<K, V, N : AbstractNode<K, V, N>>(
     internal var key: K,
     internal var value: V

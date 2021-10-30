@@ -1,11 +1,20 @@
 package trees
 
 import nodes.LockableNode
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 
+/**
+ * Class represents binary search tree with fine-grained synchronization
+ *
+ */
 class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
 
     private val treeLock = ReentrantLock()
+
+    private val _size = AtomicInteger(0)
+
+    val size get() = _size.get()
 
     internal var root: LockableNode<K, V>? = null
 
@@ -28,18 +37,26 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
     }
 
     override fun set(key: K, value: V) {
-       treeLock.lock()
+        treeLock.lock()
         root?.lock()
         try {
-            if (root == null) {
-                root = LockableNode(key, value)
+            root?.let { root ->
+                if (key == root.key) {
+                    root.value = value
+                    root.unlock()
+                    return
+                }
+            } ?: run {
+                root = LockableNode(key, value).also { _size.incrementAndGet() }
                 return
             }
         } finally {
             treeLock.unlock()
         }
 
-        root?.let { insert(key, value, it) }
+        root?.let {
+            insert(key, value, it)
+        }
     }
 
     override fun remove(key: K): Boolean {
@@ -49,6 +66,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
             root?.let {
                 if (key == it.key && it.isLeaf) {
                     this.root = null
+                    _size.decrementAndGet()
                     return true
                 }
             } ?: return false
@@ -57,12 +75,15 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
         }
 
         val toBeRemoved = root?.let { findNode(key, it) }
-        return toBeRemoved?.let { removeNode(it) } ?: false
+        return toBeRemoved?.let {
+            removeNode(it)
+        } ?: false
     }
 
     /**
-     * Assumed that [rootOfSubtree] is locked
+     * Inserts node with key [key], value [value] into tree with root [rootOfSubtree]
      *
+     * Assumed that [rootOfSubtree] is locked
      */
     private tailrec fun insert(key: K, value: V, rootOfSubtree: LockableNode<K, V>): Unit = when (key) {
         rootOfSubtree.key -> rootOfSubtree.value = value
@@ -76,6 +97,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
                 val newNode = LockableNode(key, value).apply { parent = rootOfSubtree }
                 if (key < rootOfSubtree.key) rootOfSubtree.left = newNode
                 else rootOfSubtree.right = newNode
+                _size.incrementAndGet()
                 rootOfSubtree.unlock()
             }
         }
@@ -83,8 +105,8 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
 
     /**
      * Removes [toBeRemoved] from tree
-     * Assumed that [toBeRemoved] and its parent are locked
      *
+     * Assumed that [toBeRemoved] and its parent are locked
      */
     private fun removeNode(toBeRemoved: LockableNode<K, V>): Boolean {
         val parent = toBeRemoved.parent
@@ -94,6 +116,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
                 parent?.left -> parent.left = null
                 parent?.right -> parent.right = null
             }
+            _size.decrementAndGet()
             parent?.unlock()
             return true
         }
@@ -108,7 +131,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
 
                 toBeRemoved.key = toBeRemovedRight.key
                 toBeRemoved.value = toBeRemovedRight.value
-                toBeRemoved.right = newChild
+                toBeRemoved.right = newChild.also { _size.decrementAndGet() }
 
                 newChild?.unlock()
                 toBeRemoved.unlock()
@@ -124,6 +147,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
             toBeRemoved.value = successor.value
 
             successorParent?.left = newChild?.also { it.unlock() }
+            _size.decrementAndGet()
 
             successorParent?.unlock()
             toBeRemoved.unlock()
@@ -138,7 +162,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
 
                 toBeRemoved.key = toBeRemovedLeft.key
                 toBeRemoved.value = toBeRemovedLeft.value
-                toBeRemoved.left = newChild
+                toBeRemoved.left = newChild.also { _size.decrementAndGet() }
 
                 newChild?.unlock()
                 toBeRemoved.unlock()
@@ -153,6 +177,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
             toBeRemoved.value = predecessor.value
 
             predecessorParent?.right = newChild?.also { it.unlock() }
+            _size.decrementAndGet()
 
             predecessorParent?.unlock()
             toBeRemoved.unlock()
@@ -209,8 +234,8 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
     }
 
     /**
-     * Assumed that [rootOfSubtree] is locked
      * Finds node with key [key]
+     * Assumed that [rootOfSubtree] is locked
      * If node is found keeps it and its parent locked
      *
      * @return if node is found node otherwise null
