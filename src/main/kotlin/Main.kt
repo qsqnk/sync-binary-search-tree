@@ -1,37 +1,22 @@
 import kotlin.concurrent.thread
 import kotlin.system.measureTimeMillis
 
-fun trueMain() {
-    val t = BinarySearchTree<Int, Int>()
-    val good = (0 until 20000)
-    val bad = (34 until 4444)
-
-    good.forEach { t[it] = it }
-    bad.forEach { t.remove(it) }
-    println(
-        (good - bad ).all { t[it] == it } && bad.all { t[it] == null }
-    )
-    println(good)
-    println(bad)
-}
-
 fun main(args: Array<String>) {
 
     val syncTree = SynchronizedBinarySearchTree<Int, Int>()
     val tree = BinarySearchTree<Int, Int>()
 
-    val nodes = 7
+    val good = (0 until 5885).shuffled()
+    val bad = (1234 until 5643).shuffled()
 
     val t1 = measureTimeMillis {
-        (0 until nodes).toList().parallelStream().forEach { syncTree[it] = it }
-        (2 until 5).toList().parallelStream().forEach { syncTree.remove(it) }
+        good.parallelStream().forEach { syncTree[it] = it }
+        bad.parallelStream().forEach { syncTree.remove(it) }
     }
 
     val t2 = measureTimeMillis {
-
-        (0 until nodes).shuffled().forEach { tree[it] = it }
-        (5 until 10).forEach { tree.remove(it) }
-
+        good.shuffled().forEach { tree[it] = it }
+        bad.forEach { tree.remove(it) }
     }
 
 
@@ -39,8 +24,8 @@ fun main(args: Array<String>) {
       println("time: $t1 $t2")
       println("size: ${size(syncTree.root)} ${size(tree.root)}")
       println("vald: ${validateTree(syncTree.root)} ${validateTree(tree.root)}")
-      println("vert ${allVertIn(syncTree, (0 until nodes).toList(), (2 until 5).toList())}" +
-              " ${allVertIn(tree, (0 until nodes).toList(), (2 until 5).toList())}")
+      println("vert ${allVertIn(syncTree, good, bad)}" +
+              " ${allVertIn(tree, good, bad)}")
 }
 
 internal fun validateTree(

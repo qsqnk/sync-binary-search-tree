@@ -16,11 +16,11 @@ internal data class SynchronizedNode<K : Comparable<K>, V>(
 
     internal fun lock() {
         lock.lock()
-        println("Node with key: $key is locked")
+        //println("Node with key: $key is unlocked by thread ${Thread.currentThread().id}")
     }
 
     internal fun unlock() {
         lock.unlock()
-        println("Node with key: $key is unlocked")
+        //println("Node with key: $key is locked by thread ${Thread.currentThread().id}")
     }
 }
