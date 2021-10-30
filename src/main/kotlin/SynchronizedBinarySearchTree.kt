@@ -4,105 +4,90 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
 
     private val treeLock = ReentrantLock()
 
-    internal var root: SynchronizedNode<K, V>? = null
+    internal var root: LockableNode<K, V>? = null
 
     override fun get(key: K): V? {
-        var root: SynchronizedNode<K, V>?
 
         treeLock.lock()
+        root?.lock()
         try {
-            root = this.root?.also { it.lock() } ?: return null
+            root ?: return null
         } finally {
             treeLock.unlock()
         }
 
-        return root?.let {
-            findNode(key, it)?.let { foundNode ->
+        return root?.let { findNode(key, it)?.let { foundNode ->
                 foundNode.unlock()
                 foundNode.parent?.unlock()
                 foundNode.value
             }
         }
-
     }
 
     override fun set(key: K, value: V) {
-        var parent: SynchronizedNode<K, V>?
-        var cur: SynchronizedNode<K, V>?
-
-        treeLock.lock()
-        try {
-            // if root is null put node at root
-            parent = root?.also { r ->
-                r.lock()
-            } ?: run {
-                root = SynchronizedNode(key, value)
-                return
-            }
-            cur = if (key < parent.key) parent.left else parent.right
-        } finally {
-            treeLock.unlock()
-        }
-
-        cur?.lock()
-
-        try {
-            while (cur != null && key != cur.key) {
-                parent?.unlock()
-                parent = cur
-                cur = if (key < cur.key) cur.left else cur.right
-                cur?.lock()
-            }
-
-            // found node's key is equal to node's key to be inserted
-            cur?.let {
-                it.value = value
-                return
-            }
-
-            // add new leaf to tree
-            parent?.let { p ->
-                val newChild = SynchronizedNode(key, value).apply { this.parent = p }
-                if (key < p.key) p.left = newChild
-                else p.right = newChild
-            }
-
-        } finally {
-            cur?.unlock()
-            parent?.unlock()
-        }
-    }
-
-
-    override fun remove(key: K): Boolean {
-        var parent: SynchronizedNode<K, V>?
-        var toBeRemoved: SynchronizedNode<K, V>?
-
-        println("start removing node ${key} by thread ${Thread.currentThread().id}")
+        var parent: LockableNode<K, V>?
 
         treeLock.lock()
         root?.lock()
         try {
-            val root = this.root
-            if (root != null) {
-                if (key == root.key && root.isLeaf) {
-                    this.root = null
-                    return true
-                }
-            } else return false
-
-            toBeRemoved = findNode(key, root) ?: return false
-            parent = toBeRemoved.parent
-
-            if (toBeRemoved.isLeaf && parent == null) {
-                this.root = null
-                return true
+            if (root == null) {
+                root = LockableNode(key, value)
+                return
             }
         } finally {
             treeLock.unlock()
         }
 
-        toBeRemoved ?: return false
+        root?.let { insert(key, value, it) }
+    }
+
+    override fun remove(key: K): Boolean {
+
+        treeLock.lock()
+        root?.lock()
+        try {
+            root?.let {
+                if (key == it.key && it.isLeaf) {
+                    this.root = null
+                    return true
+                }
+            } ?: return false
+        } finally {
+            treeLock.unlock()
+        }
+
+        val toBeRemoved = root?.let { findNode(key, it) }
+        return toBeRemoved?.let { removeNode(it) } ?: false
+    }
+
+    /**
+     * Assumed that [rootOfSubtree] is locked
+     *
+     */
+    private tailrec fun insert(key: K, value: V, rootOfSubtree: LockableNode<K, V>): Unit = when (key) {
+        rootOfSubtree.key -> rootOfSubtree.value = value
+        else -> {
+            val nextRoot = if (key < rootOfSubtree.key) rootOfSubtree.left else rootOfSubtree.right
+            if (nextRoot != null) {
+                nextRoot.lock()
+                rootOfSubtree.unlock()
+                insert(key, value, nextRoot)
+            } else {
+                val newNode = LockableNode(key, value).apply { parent = rootOfSubtree }
+                if (key < rootOfSubtree.key) rootOfSubtree.left = newNode
+                else rootOfSubtree.right = newNode
+                rootOfSubtree.unlock()
+            }
+        }
+    }
+
+    /**
+     * Removes [toBeRemoved] from tree
+     * Assumed that [toBeRemoved] and its parent are locked
+     *
+     */
+    private fun removeNode(toBeRemoved: LockableNode<K, V>): Boolean {
+        val parent = toBeRemoved.parent
 
         if (toBeRemoved.isLeaf) {
             when (toBeRemoved) {
@@ -113,8 +98,6 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
             return true
         }
 
-        // in case of removing internal nodes we have no need keep parent locked
-
         parent?.unlock()
 
         toBeRemoved.right?.let { toBeRemovedRight ->
@@ -124,8 +107,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
                 toBeRemovedRight.lock()
 
                 if (toBeRemovedRight.left == null) {
-                    val newChild = toBeRemovedRight.right?.also { it.lock() }
-                    newChild?.parent = toBeRemoved
+                    val newChild = toBeRemovedRight.right?.apply { this.parent = toBeRemoved }?.also { it.lock() }
 
                     toBeRemoved.key = toBeRemovedRight.key
                     toBeRemoved.value = toBeRemovedRight.value
@@ -139,8 +121,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
 
             val successor = successor(toBeRemoved) ?: return@let
             val successorParent = successor.parent
-            val newChild = successor.right?.also { it.lock() }
-            newChild?.parent = successorParent
+            val newChild = successor.right?.apply { this.parent = successorParent }?.also { it.lock() }
 
             toBeRemoved.key = successor.key
             toBeRemoved.value = successor.value
@@ -156,8 +137,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
             toBeRemovedLeft.lock()
 
             if (toBeRemovedLeft.right == null) {
-                val newChild = toBeRemovedLeft.left?.also { it.lock() }
-                newChild?.parent = toBeRemoved
+                val newChild = toBeRemovedLeft.left?.apply { this.parent = toBeRemoved }?.also { it.lock() }
 
                 toBeRemoved.key = toBeRemovedLeft.key
                 toBeRemoved.value = toBeRemovedLeft.value
@@ -170,8 +150,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
 
             val predecessor = predecessor(toBeRemoved) ?: return@let
             val predecessorParent = predecessor.parent
-            val newChild = predecessor.left?.also { it.lock() }
-            newChild?.parent = predecessorParent
+            val newChild = predecessor.left?.apply { this.parent = predecessorParent }?.also { it.lock() }
 
             toBeRemoved.key = predecessor.key
             toBeRemoved.value = predecessor.value
@@ -192,8 +171,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
      *
      * @return successor or null
      */
-
-    private fun successor(node: SynchronizedNode<K, V>): SynchronizedNode<K, V>? {
+    private fun successor(node: LockableNode<K, V>): LockableNode<K, V>? {
         var successorParent = node.right
         var successor = successorParent?.left
 
@@ -210,8 +188,13 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
         return successor
     }
 
-
-    private fun predecessor(node: SynchronizedNode<K, V>): SynchronizedNode<K, V>? {
+    /**
+     * Finds predecessor
+     * If predecessor is found predecessor and its parent are kept blocked
+     *
+     * @return predecessor or null
+     */
+    private fun predecessor(node: LockableNode<K, V>): LockableNode<K, V>? {
         var predecessorParent = node.left
         var predecessor = predecessorParent?.right
 
@@ -236,30 +219,17 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
      * @return if node is found node otherwise null
      */
 
-    private fun findNode(key: K, rootOfSubtree: SynchronizedNode<K, V>): SynchronizedNode<K, V>? = when {
-        key == rootOfSubtree.key -> rootOfSubtree
-        key < rootOfSubtree.key -> {
-            val l = rootOfSubtree.left
-            if (l != null) {
-                l.lock()
-                if (key == l.key) l
-                else {
-                    rootOfSubtree.unlock()
-                    findNode(key, l)
-                }
-            } else {
-                rootOfSubtree.unlock()
-                null
-            }
-        }
+    private tailrec fun findNode(key: K, rootOfSubtree: LockableNode<K, V>): LockableNode<K, V>? = when (key) {
+        rootOfSubtree.key -> rootOfSubtree
         else -> {
-            val r = rootOfSubtree.right
-            if (r != null) {
-                r.lock()
-                if (key == r.key) r
-                else {
+            val nextRoot = if (key < rootOfSubtree.key) rootOfSubtree.left else rootOfSubtree.right
+            if (nextRoot != null) {
+                nextRoot.lock()
+                if (key == nextRoot.key) {
+                    nextRoot
+                } else {
                     rootOfSubtree.unlock()
-                    findNode(key, r)
+                    findNode(key, nextRoot)
                 }
             } else {
                 rootOfSubtree.unlock()

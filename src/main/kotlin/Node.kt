@@ -1,13 +1,12 @@
-internal data class Node<K : Comparable<K>, V>(
-    internal var key: K,
-    internal var value: V
-) {
+internal class Node<K : Comparable<K>, V>(
+    key: K,
+    value: V,
+) : AbstractNode<K, V, Node<K, V>>(key, value) {
 
-    internal var left: Node<K, V>? = null
+    override var left: Node<K, V>? = null
 
-    internal var right: Node<K, V>? = null
+    override var right: Node<K, V>? = null
 
-    internal var parent: Node<K, V>? = null
+    override var parent: Node<K, V>? = null
 
-    internal val isLeaf get() = left == null && right == null
 }
