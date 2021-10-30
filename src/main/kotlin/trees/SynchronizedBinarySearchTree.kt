@@ -1,3 +1,6 @@
+package trees
+
+import nodes.LockableNode
 import java.util.concurrent.locks.ReentrantLock
 
 class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
@@ -7,7 +10,6 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
     internal var root: LockableNode<K, V>? = null
 
     override fun get(key: K): V? {
-
         treeLock.lock()
         root?.lock()
         try {
@@ -26,9 +28,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
     }
 
     override fun set(key: K, value: V) {
-        var parent: LockableNode<K, V>?
-
-        treeLock.lock()
+       treeLock.lock()
         root?.lock()
         try {
             if (root == null) {
@@ -43,7 +43,6 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
     }
 
     override fun remove(key: K): Boolean {
-
         treeLock.lock()
         root?.lock()
         try {

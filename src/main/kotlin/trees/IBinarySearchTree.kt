@@ -1,3 +1,5 @@
+package trees
+
 interface IBinarySearchTree <K: Comparable<K>, V> {
 
     operator fun set(key: K, value: V)

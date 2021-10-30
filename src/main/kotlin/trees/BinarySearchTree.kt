@@ -1,3 +1,7 @@
+package trees
+
+import nodes.Node
+
 class BinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
 
     internal var root: Node<K, V>? = null

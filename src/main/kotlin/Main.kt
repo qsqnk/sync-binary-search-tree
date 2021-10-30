@@ -1,3 +1,8 @@
+import nodes.LockableNode
+import nodes.Node
+import trees.BinarySearchTree
+import trees.IBinarySearchTree
+import trees.SynchronizedBinarySearchTree
 import kotlin.system.measureTimeMillis
 
 fun main(args: Array<String>) {
@@ -7,11 +12,11 @@ fun main(args: Array<String>) {
 
 
 
-    val good = (0 until 100000).toList().shuffled()
-    val bad = (50000 until  75000).shuffled()
+    val good = (0 until 3000000).toList().shuffled()
+    val bad = (50000 until  1111111).shuffled()
 
     val t1 = measureTimeMillis {
-        good.parallelStream().forEach { syncTree[it] = it; syncTree.remove(it) }
+        good.parallelStream().forEach { syncTree[it] = it }
         bad.parallelStream().forEach { syncTree.remove(it) }
     }
 

@@ -1,3 +1,5 @@
+package nodes
+
 internal abstract class AbstractNode<K, V, N : AbstractNode<K, V, N>>(
     internal var key: K,
     internal var value: V
