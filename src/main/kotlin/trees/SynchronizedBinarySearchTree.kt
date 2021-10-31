@@ -37,7 +37,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
     }
 
     override fun set(key: K, value: V) {
-        treeLock.lock()
+       treeLock.lock()
         root?.lock()
         try {
             root?.let { root ->
@@ -86,7 +86,10 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
      * Assumed that [rootOfSubtree] is locked
      */
     private tailrec fun insert(key: K, value: V, rootOfSubtree: LockableNode<K, V>): Unit = when (key) {
-        rootOfSubtree.key -> rootOfSubtree.value = value
+        rootOfSubtree.key -> {
+            rootOfSubtree.value = value
+            rootOfSubtree.unlock()
+        }
         else -> {
             val nextRoot = if (key < rootOfSubtree.key) rootOfSubtree.left else rootOfSubtree.right
             if (nextRoot != null) {
