@@ -1,12 +1,15 @@
-import nodes.LockableNode
+import org.jetbrains.kotlinx.lincheck.LinChecker
 import org.jetbrains.kotlinx.lincheck.annotations.Operation
 import org.jetbrains.kotlinx.lincheck.annotations.Param
 import org.jetbrains.kotlinx.lincheck.annotations.Validate
 import org.jetbrains.kotlinx.lincheck.paramgen.IntGen
+import org.jetbrains.kotlinx.lincheck.strategy.managed.modelchecking.ModelCheckingCTest
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import trees.SynchronizedBinarySearchTree
 
-abstract class LinCheckTestsBase {
+@ModelCheckingCTest
+class SynchronizedBinarySearchTreeModelTests {
 
     var tree = SynchronizedBinarySearchTree<Int, Int>()
 
@@ -14,6 +17,9 @@ abstract class LinCheckTestsBase {
     fun updateTree() {
         tree = SynchronizedBinarySearchTree()
     }
+
+    @Test
+    fun runTest() = LinChecker.check(this::class.java)
 
     @Operation
     fun set(
@@ -32,23 +38,6 @@ abstract class LinCheckTestsBase {
 
     @Validate
     fun validateTree() {
-        if (!tree.root.checkTreeInvariants()) {
-            throw IllegalArgumentException("Invalid tree!")
-        }
-    }
-
-    /**
-     * Checks binary search tree invariants
-     *
-     * @return true if tree is valid else false
-     *
-     */
-    internal fun LockableNode<Int, Int>?.checkTreeInvariants(
-        mn: Int = Int.MIN_VALUE,
-        mx: Int = Int.MAX_VALUE
-    ): Boolean = when {
-        this == null -> true
-        value >= mx || value <= mn -> false
-        else -> left.checkTreeInvariants(mn, value) && right.checkTreeInvariants(value, mx)
+        if (!tree.root.checkTreeInvariants()) throw IllegalArgumentException("Invalid tree!")
     }
 }
