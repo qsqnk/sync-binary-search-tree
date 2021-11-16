@@ -8,6 +8,7 @@ interface IBinarySearchTree<K : Comparable<K>, V> {
 
     /**
      * Adds node with key [key], value [value]
+     * If node with key [key] presents, replaces the value
      *
      * Allows to use the index operator for storing values in a binary search tree
      */

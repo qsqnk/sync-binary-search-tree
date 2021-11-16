@@ -6,13 +6,21 @@ import java.util.concurrent.locks.ReentrantLock
 
 /**
  * Class represents binary search tree with fine-grained synchronization
+ * In traversing two adjacent nodes are locked.
+ * Tree lock can be obtained only after global tree lock
+ *
+ * @param [K] type of keys stored
+ * @param [V] type of values stored
  *
  */
 class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, V> {
 
-    private val treeLock = ReentrantLock()
+    /**
+     * Global tree lock
+     */
+    internal val treeLock = ReentrantLock()
 
-    private val _size = AtomicInteger(0)
+    internal val _size = AtomicInteger(0)
 
     internal var root: LockableNode<K, V>? = null
 
@@ -107,11 +115,13 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
             return true
         }
 
+        // if node to be removed is not leaf parent's lock can be released
         parent?.unlock()
 
         toBeRemoved.right?.let { toBeRemovedRight ->
             toBeRemovedRight.lock()
 
+            // only one child
             if (toBeRemovedRight.left == null) {
                 val newChild = toBeRemovedRight.right?.apply {
                     this.parent = toBeRemoved
@@ -151,6 +161,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
         toBeRemoved.left?.let { toBeRemovedLeft ->
             toBeRemovedLeft.lock()
 
+            // only one child
             if (toBeRemovedLeft.right == null) {
                 val newChild = toBeRemovedLeft.left?.apply {
                     this.parent = toBeRemoved
@@ -262,6 +273,11 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
         }
     }
 
+    /**
+     * Locks root and processes [action]
+     * under global tree lock
+     *
+     */
     private inline fun lockAndProcessRoot(action: (LockableNode<K, V>?) -> Unit) {
         treeLock.lock()
         try {

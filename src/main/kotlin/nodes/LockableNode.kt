@@ -7,7 +7,7 @@ internal class LockableNode<K : Comparable<K>, V>(
     value: V,
 ) : AbstractNode<K, V, LockableNode<K, V>>(key, value) {
 
-    private val lock = ReentrantLock()
+    internal val lock = ReentrantLock()
 
     override var left: LockableNode<K, V>? = null
 

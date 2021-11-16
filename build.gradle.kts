@@ -1,29 +1,21 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-plugins {
-    kotlin("jvm") version "1.5.10"
-    application
-}
-
-group = "me.qsqnk"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
 
+plugins {
+    kotlin("jvm") version "1.5.31"
+}
+
+sourceSets.test {
+    java.srcDirs("src/test")
+}
+
 dependencies {
-    testImplementation(kotlin("test"))
+    implementation(kotlin("reflect"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.5.31")
+    implementation("org.jetbrains.kotlinx:lincheck:2.14.1")
 }
 
 tasks.test {
     useJUnitPlatform()
-}
-
-tasks.withType<KotlinCompile>() {
-    kotlinOptions.jvmTarget = "1.8"
-}
-
-application {
-    mainClass.set("MainKt")
 }
