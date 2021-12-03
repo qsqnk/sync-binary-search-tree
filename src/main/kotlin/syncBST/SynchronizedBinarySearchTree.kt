@@ -36,11 +36,6 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
                 this.root = LockableNode(key, value).also { _size.incrementAndGet() }
                 return
             }
-            if (key == root.key) {
-                root.value = value
-                root.unlock()
-                return
-            }
         }
         insertNonRoot(key, value)
     }
@@ -62,21 +57,21 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
     }
 
     /**
-     * Inserts node with key [key], value [value] into tree with root [root]
+     * Inserts node with key [key], value [value]
      *
-     * Assumed that [root] is locked and key != root.key
+     * Assumed that root is locked and tree is not empty
      */
     private fun insertNonRoot(key: K, value: V) {
         val root = root ?: return
         val (parent, node) = findNodeAndParent(key, root)
-        parent ?: return
         node?.let { it.value = value } ?: run {
+            parent ?: return
             val newChild = LockableNode(key, value).apply { this.parent = parent }
             if (key < parent.key) parent.left = newChild else parent.right = newChild
         }
         _size.incrementAndGet()
         node?.unlock()
-        parent.unlock()
+        parent?.unlock()
     }
 
     /**
