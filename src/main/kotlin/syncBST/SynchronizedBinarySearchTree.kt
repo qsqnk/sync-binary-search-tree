@@ -62,7 +62,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
     }
 
     /**
-     * Inserts node with key [key], value [value] into tree with root [root]
+     * Inserts node with key [key], value [value] into tree
      *
      * Assumed that [root] is locked and key != root.key
      */
