@@ -1,4 +1,4 @@
-package trees
+package syncBST
 
 /**
  * @param [K] type of keys stored

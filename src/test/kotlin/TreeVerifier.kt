@@ -1,4 +1,4 @@
-import nodes.LockableNode
+import syncBST.LockableNode
 
 /**
  * Checks binary search tree invariants
