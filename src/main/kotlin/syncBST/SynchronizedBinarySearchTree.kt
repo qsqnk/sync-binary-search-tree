@@ -5,8 +5,8 @@ import java.util.concurrent.locks.ReentrantLock
 
 /**
  * Class represents binary search tree with fine-grained synchronization
- * In traversing two adjacent nodes are locked.
- * Tree lock can be obtained only after global tree lock
+ * Hand-over-hand locking is used while traversing
+ * Root lock can be obtained only after global tree lock
  *
  * @param [K] type of keys stored
  * @param [V] type of values stored
