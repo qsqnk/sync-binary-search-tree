@@ -13,15 +13,13 @@ class SynchronizedBinarySearchTreeStressTests : SynchronizedBinarySearchTreeTest
         .check(this::class)
 
     class SequentialImplementation : VerifierState() {
-        val sequentialImplementation = hashMapOf<Int, Int>()
+        private val sequentialImplementation = hashMapOf<Int, Int>()
 
         fun set(key: Int, value: Int) {
             sequentialImplementation[key] = value
         }
 
-        fun remove(key: Int) {
-            sequentialImplementation.remove(key)
-        }
+        fun remove(key: Int) = sequentialImplementation.remove(key)?.let { true } ?: false
 
         override fun extractState() = sequentialImplementation
     }

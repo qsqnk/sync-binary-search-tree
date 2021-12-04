@@ -19,12 +19,9 @@ abstract class SynchronizedBinarySearchTreeTestTemplate {
     @Operation
     fun remove(
         @Param(gen = IntGen::class, conf = "-10:10") key: Int
-    ) {
-        tree.remove(key)
-    }
+    ) = tree.remove(key)
+
 
     @Validate
-    fun validateTree() {
-        if (!tree.root.checkTreeInvariants()) throw IllegalArgumentException("Invalid tree!")
-    }
+    fun validateTree() = check(tree.root.checkTreeInvariants()) { "Tree invariants violated" }
 }
