@@ -24,9 +24,10 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
         lockAndProcessRoot { root -> root ?: return null }
         return root?.let {
             val (parent, node) = findNodeAndParent(key, it)
+            val value = node?.value
             node?.unlock()
             parent?.unlock()
-            node?.value
+            value
         }
     }
 
