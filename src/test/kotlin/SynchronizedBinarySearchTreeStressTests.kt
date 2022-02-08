@@ -19,7 +19,7 @@ class SynchronizedBinarySearchTreeStressTests : SynchronizedBinarySearchTreeTest
             sequentialImplementation[key] = value
         }
 
-        fun remove(key: Int) = sequentialImplementation.remove(key)?.let { true } ?: false
+        fun remove(key: Int) = sequentialImplementation.remove(key) != null
 
         fun get(key: Int) = sequentialImplementation[key]
 

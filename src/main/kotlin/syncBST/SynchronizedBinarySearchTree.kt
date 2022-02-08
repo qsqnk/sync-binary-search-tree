@@ -53,7 +53,8 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
         }
         return root?.let {
             val (parent, toBeRemoved) = findNodeAndParent(key, it)
-            toBeRemoved?.let { removeNode(toBeRemoved) } ?: false.also { parent?.unlock() }
+            toBeRemoved ?: parent?.unlock()
+            toBeRemoved?.let { removeNode(toBeRemoved) }
         } ?: false
     }
 
@@ -110,7 +111,7 @@ class SynchronizedBinarySearchTree<K : Comparable<K>, V> : IBinarySearchTree<K, 
         }
         successor ?: return false
         val newChild = successor.right?.apply { parent = successorParent }
-        with (toBeRemoved) {
+        with(toBeRemoved) {
             key = successor.key
             value = successor.value
         }
